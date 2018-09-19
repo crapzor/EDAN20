@@ -2,8 +2,11 @@ import os
 import sys
 import regex as re
 import math
+import numpy
 
 fn = sys.argv[1]
+
+
 # print(fn) # read from command prompt
 
 # takes in string object of a directory
@@ -11,26 +14,29 @@ fn = sys.argv[1]
 def files(fn, function=False):
     if os.path.exists(fn):  # if such path exist
         files = []
-        for file_name in os.listdir(fn):    # for each file in the directory fn
-            files.append(file_name)     # lista av all filer i Selma
+        for file_name in os.listdir(fn):  # for each file in the directory fn
+            files.append(file_name)  # lista av all filer i Selma
         if function:
-            return len(files)   # number of documents
+            return len(files)  # number of documents
         else:
             return files
 
-#print(files(fn,True))
+
+
 
 # takes in a file name
 # returns list of all internal word-index pairs
-def file_index(file_name , function = False):
+def file_index(file_name, function=False):
     text = open(fn + '/' + file_name).read().lower()
     list1 = list(re.finditer('\p{L}+', text))
     if function:
-        return len(list1) # total words in a document
+        return len(list1)  # total words in a document
     else:
         return list1
 
-#print(word_index('test.txt',True))
+
+
+#print(file_index('bannlyst.txt'))
 
 
 # Takes in a list and a string: the list contains words and their index, and the
@@ -41,94 +47,143 @@ def organized_indexer(words, word=None, function=False):
     idx = {}
     for i in words:
         if i.group() in idx:
-           idx[i.group()].append(i.start())
+            idx[i.group()].append(i.start())
         else:
             idx[i.group()] = [i.start()]
     if word in idx:
         if function:
-            return len(idx[word]) # frequency of a specific word in a doc
+            return len(idx[word])  # frequency of a specific word in a doc
         else:
             return idx[word]
     else:
         if function:
-            return 0.0 # if word does not exist retunn 0 in function form
+            return 0.0  # if word does not exist retunn 0 in function form
         else:
             return idx
 
-#print(organized_indexer(file_index('test.txt'),'a',True))
 
 
+#print(organized_indexer(file_index('bannlyst.txt',),'känna'))
 
 
 #
-def master_indexer(word = None, function=False):
-    word_dict = {}  #{'file_name' : [0, 10, 23]}
-    #word_dict[] = {}  #{'word' : {'file_name' : [0, 10, 23]}}
-    all_files = files(fn) # list containing file names
-    #print(all_files)
-    for file in all_files: #loopas 2 ggr
-        word_index2 = organized_indexer(file_index(file)) # {'word' : [0, 10, 23]}
+def master_indexer(word=None):
+    word_dict = {}  # {'file_name' : [0, 10, 23]}
+    # word_dict[] = {}  #{'word' : {'file_name' : [0, 10, 23]}}
+    all_files = files(fn)  # list containing file names
+    # print(all_files)
+    for file in all_files:  # loopas 2 ggr
+        word_index2 = organized_indexer(file_index(file))  # {'word' : [0, 10, 23]}
         #print(word_index2)
         for w in word_index2:
-            #word_dict[w] = {}
+            # word_dict[w] = {}
             if w in word_dict:
                 word_dict[w][file] = word_index2[w]
             else:
                 word_dict[w] = {}
-                word_dict[w][file] = word_index2[w] # {'word' : {'file_name' : [0, 10, 23]}}
+                word_dict[w][file] = word_index2[w]  # {'word' : {'file_name' : [0, 10, 23]}}
 
     if word in word_dict:
-        if function:
-            return len(word_dict[word])  # number of docs containing word w
-        else:
-            return word_dict[word]
+        return word_dict[word]
     else:
-        if function:
-            return 0.0
-        else:
-            return word_dict
+       return word_dict
 
-#print(master_indexer('samlar'))
 
-#calculates the tf if a document contains no words return 0
-def t_f(doc , word):
-    words = file_index(doc, True) # all words in document doc
-    if words == 0:
-        return 0.0
-    ordet = organized_indexer(file_index(doc), word, True) # frequency of a word
-    return ordet/words
+master_idx = master_indexer()
+
+words = ['samlar','ände']
+
+for i in words:
+    print(i + ': ' + str(master_idx[i]))
+
+
+#print(master_idx)
+
+
+
+# calculates the tf if a document contains no words return 0
+
+#def t_f(freq, words):
+#    return freq / words
+
+#print(t_f('bannlyst.txt', 'att'))
 
 # print(t_f('test.txt','a'))
 
-#calculates the idf, if no document contains word return 0
-def i_df(word):#,documents):
-    docs = files(fn,True) # total number of documents
-    #print(docs)
-    doc_containing_word = master_indexer(word,True)
-    if doc_containing_word == 0:
-        return 0.0
+# calculates the idf, if no document contains word return 0
+def i_df(word):  # ,documents):
+    docs = files(fn, True)  # total number of documents
+    #print(str(docs) + '\n')
+    doc_containing_word = len(master_idx[word]) #master_indexer(word, True)
     #print(doc_containing_word)
-    idf = math.log10((docs / doc_containing_word))
-    return idf
+    return math.log10(docs / doc_containing_word)
 
-#print(i_df('a') )
+dict1 = {}
+for i in master_idx.keys():
+    dict1[i] = i_df(i)
+
+#print(i_df('känna'))
 
 
-
-def tf_idf(docs, words):
+def tf_idf(docs, words, function=False): #3 changes
+    matrix = list()
     for doc in docs:
-        print('\n' + doc)
+        doc_vector = list()
+        all_words = file_index(doc, True)  # nbr of all words in document doc
+        word_freq = organized_indexer(file_index(doc)) # len(word_frequency[word]) => frequency of a specific word in doc
+        #print('\n' + doc) ### avkommentera
         for w in words:
-            tf = t_f(doc, w)
-            idf = i_df(w)
-            mul = tf*idf
-            print(w + ' ' + str(mul))
+            if w in word_freq:
+                tf = len(word_freq[w])/all_words
+            else:
+                tf = 0.0
 
+            idf = dict1[w]  #Byt tbx
+            mul = tf * idf
+            #print(w + ' ' + str(mul)) #avkommentera
+            doc_vector.append(mul)
+        matrix.append(doc_vector)
+    if function:
+        return matrix
+
+#kommentera bort
+#documents = ['bannlyst.txt', 'gosta.txt', 'herrgard.txt', 'jerusalem.txt', 'nils.txt']
+#words_to_process = ['känna', 'gås', 'nils', 'et']
+#tf_idf(documents, words_to_process)
 
 
 documents = files(fn)
-#print(documents)
-words_to_process = ['känna', 'gås','nils', 'et']
+words_to_process = master_idx.keys()        # alla ord dvs nycklar från master indexer
+grand_matrix = tf_idf(documents, words_to_process, True)
+
+def cosine_similar_matrix(grand_matrix):
+    similarity_matrix = list()
+    for i in range(len(grand_matrix)):
+        norm1 = numpy.linalg.norm(grand_matrix[i])
+        doc_row = list()
+        for j in range(len(grand_matrix)):
+            dot_prod = numpy.dot(grand_matrix[i], grand_matrix[j])
+            norm2 = numpy.linalg.norm(grand_matrix[j])
+            product = dot_prod / (norm1 * norm2)
+            doc_row.append(product)
+        similarity_matrix.append(doc_row)
+    return similarity_matrix
 
 
-tf_idf(documents , words_to_process)
+sim = cosine_similar_matrix(grand_matrix)
+print(sim)
+
+
+temp = 0
+for i in range(9):
+    for j in range(9):
+        if i != j:
+            if sim[i][j] > temp:
+                temp = sim[i][j]
+                row = i
+                col = j
+
+
+
+print('cosine value: ' + str(temp) + ' document 1: ' + str(documents[row]) + ' document 2: ' + str(documents[col]))
+
