@@ -9,7 +9,7 @@ import regex as re
 
 text = """Tell me, O muse, of that ingenious hero who
 travelled far and wide after he had sacked the famous
-town of Troy."""
+town of Troy. NOOOOOOO. Why."""
 
 
 def tokenize(text):
@@ -52,12 +52,38 @@ def tokenize4(text):
     return tokens
 
 
+def normalize(tokens):
+    norm_list = list()
+    words = list()
+    words.append('<s>')
+    for i in range(len(tokens)):
+        if tokens[i] == '.':
+            if i == len(tokens) - 1:
+                words.append('</s>')
+                norm_list.append(words)
+            elif bool(re.match('\p{Lu}\p{L}+', tokens[i+1])):
+                words.append('</s>')
+                norm_list.append(words)
+                words = list()
+                words.append('<s>')
+        elif bool(re.match('\p{L}+', tokens[i])):
+            words.append(tokens[i].lower())
+    return norm_list
+
+
 if __name__ == '__main__':
-    text = sys.stdin.read()
-    """words = tokenize(text)
-    for word in words:
-        print(word)
-    words = tokenize2(text)
-    print(words)"""
+    #text = sys.stdin.read()
+    text = open(sys.argv[1]).read()
+    #words = tokenize(text)
+    #for word in words:
+    #    print(word)
+    #words = tokenize2(text)
+    #print(words)
+    #print('\n')
+    #words = tokenize2(text)
+    #print(words)
     words = tokenize4(text)
-    print(words)
+    norm_li = normalize(words)
+    for i in range(5):
+        conc = ' '.join(norm_li[i-5])
+        print(conc)
