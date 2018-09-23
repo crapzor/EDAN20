@@ -36,6 +36,15 @@ def train(corpus):
     """
     Fill in code to compute the chunk distribution for each part of speech
     """
+    #chunk_dist ['pos'] ['chunk'] = value => (frequency of chunk)
+    for sentence in corpus:
+        for row in sentence:
+            if row['chunk'] in chunk_dist[row['pos']]:
+                chunk_dist[row['pos']][row['chunk']] += 1
+            else:
+                chunk_dist[row['pos']][row['chunk']] = 1
+
+    #print(chunk_dist['JJR'])
 
     # We determine the best association
     pos_chunk = {}
@@ -44,7 +53,22 @@ def train(corpus):
     You will build a dictionary with key values:
     pos_chunk[pos] = most frequent chunk for pos
     """
+
+
+    for pos in chunk_dist:
+        max_chunk = ''
+        chunk_value = 0
+        for chunk in chunk_dist[pos]:
+            if( chunk_dist[pos][chunk] > chunk_value):
+                max_chunk = chunk
+                chunk_value = chunk_dist[pos][chunk]
+        pos_chunk[pos] = max_chunk
+
+    print(pos_chunk['JJR'])
+
     return pos_chunk
+
+
 
 
 def predict(model, corpus):
@@ -82,8 +106,8 @@ def eval(predicted):
 
 if __name__ == '__main__':
     column_names = ['form', 'pos', 'chunk']
-    train_file = '../../corpus/conll2000/train.txt'
-    test_file = '../../corpus/conll2000/test.txt'
+    train_file = 'corpus/conll2000/train.txt'
+    test_file = 'corpus/conll2000/test.txt'
 
     train_corpus = conll_reader.read_sentences(train_file)
     train_corpus = conll_reader.split_rows(train_corpus, column_names)
@@ -98,6 +122,8 @@ if __name__ == '__main__':
     f_out = open('out', 'w')
     # We write the word (form), part of speech (pos),
     # gold-standard chunk (chunk), and predicted chunk (pchunk)
+
+
     for sentence in predicted:
         for row in sentence:
             f_out.write(row['form'] + ' ' + row['pos'] + ' ' +
