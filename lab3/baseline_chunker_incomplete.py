@@ -64,8 +64,6 @@ def train(corpus):
                 chunk_value = chunk_dist[pos][chunk]
         pos_chunk[pos] = max_chunk
 
-    print(pos_chunk['JJR'])
-
     return pos_chunk
 
 
@@ -106,8 +104,8 @@ def eval(predicted):
 
 if __name__ == '__main__':
     column_names = ['form', 'pos', 'chunk']
-    train_file = 'corpus/conll2000/train.txt'
-    test_file = 'corpus/conll2000/test.txt'
+    train_file = 'train.txt'
+    test_file = 'test.txt'
 
     train_corpus = conll_reader.read_sentences(train_file)
     train_corpus = conll_reader.split_rows(train_corpus, column_names)

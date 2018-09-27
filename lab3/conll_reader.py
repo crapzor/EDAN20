@@ -33,9 +33,9 @@ def split_rows(sentences, column_names):
 
 
 if __name__ == '__main__':
-    train_file = '../../corpus/conll2000/train.txt'
+    train_file = 'train.txt'
     # train_file = 'test_x'
-    test_file = '../../corpus/conll2000/test.txt'
+    test_file = 'test.txt'
     column_names = ['form', 'pos', 'chunk']
 
     sentences = read_sentences(train_file)
