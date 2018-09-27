@@ -95,9 +95,10 @@ if __name__ == '__main__':
     print('=====================================================')
 
     tokens = tokenize4(text)
-    words = concatenate(normalize(tokens)[0])
+    normalized = normalize(tokens)
+    words = concatenate(normalized[0])
     frequency = count_unigrams(words)
-    alla_ord = normalize(tokens)[1]
+    alla_ord = normalized[1]
 
     #for word in sorted(frequency.keys(), key=frequency.get, reverse=True):
     #    alla_ord += frequency[word]
