@@ -12,9 +12,10 @@ from sklearn import metrics
 from sklearn import tree
 from sklearn.naive_bayes import GaussianNB
 from sklearn.model_selection import GridSearchCV
+import numpy
 
 
-def extract_features(sentences, w_size, feature_names): #, training):
+def extract_features(sentences, w_size, feature_names):
     """
     Builds X matrix and y vector
     X is a list of dictionaries and y is a list
@@ -25,13 +26,13 @@ def extract_features(sentences, w_size, feature_names): #, training):
     X_l = []
     y_l = []
     for sentence in sentences:
-        X, y = extract_features_sent(sentence, w_size, feature_names) #, training)
+        X, y = extract_features_sent(sentence, w_size, feature_names)
         X_l.extend(X)
         y_l.extend(y)
     return X_l, y_l
 
-
-def extract_features_sent(sentence, w_size, feature_names): #, training):
+#this needs work
+def extract_features_sent(sentence, w_size, feature_names):
     """
     Extract the features from one sentence
     returns X and y, where X is a list of dictionaries and
@@ -46,8 +47,7 @@ def extract_features_sent(sentence, w_size, feature_names): #, training):
     end = "\nEOS EOS EOS"
     start *= w_size
     end *= w_size
-    sentence = start + sentence
-    sentence += end
+    sentence = start + sentence + end
 
     # Each sentence is a list of rows
     sentence = sentence.splitlines()
@@ -72,82 +72,73 @@ def extract_features_sent(sentence, w_size, feature_names): #, training):
         for j in range(2 * w_size + 1):
             x.append(padded_sentence[i + j][1])
         # The chunks (Up to the word)
-        """
-        if training:
-            for j in range(w_size):
-                x.append(padded_sentence[i + j][2])
-        """
+        for j in range(w_size):
+            x.append(padded_sentence[i + j][2])
         # We represent the feature vector as a dictionary
         X.append(dict(zip(feature_names, x)))
         # The classes are stored in a list
         y.append(padded_sentence[i + w_size][2])
     return X, y
 
-
+#this needs work
 def predict(test_sentences, feature_names, f_out):
     for test_sentence in test_sentences:
-        X_test_dict, y_test = extract_features_sent(test_sentence, w_size, feature_names) #, False)
-        y_test_predicted = list()
-        #print(y_test)
-        y = ['BOS', 'BOS']
-        # X_test_dict: dict where each row is what we need to do the prediction.
-        for i in range(len(X_test_dict)):
-            #print('ÄLÄLÄLÄLÄLÄLÄ ' + str(i))
-            #print(X_test_dict[i])
-            X_test_dict[i]['chunk_n2'] = y[0]
-            X_test_dict[i]['chunk_n1'] = y[1]
-            #print(X_test_dict[i])
-            # Vectorize the test sentence and one hot encoding
-            X_test = vec.transform(X_test_dict[i])
-            # Predicts the chunks and returns numbers
-            y[0] = y[1]
-            y[1] = classifier.predict(X_test)[0]
-            #print(y[1])
-            y_test_predicted.append(y[1])
+        X_test_dict, y_test = extract_features_sent(test_sentence, w_size, feature_names)
 
+        y_test_predicted = []
+        for X_test in X_test_dict:
+            if len(y_test_predicted) > 0:
+                X_test['chunk_n1'] = y_test_predicted[-1]
+            if len(y_test_predicted) > 1:
+                X_test['chunk_n2'] = y_test_predicted[-2]
+            X_test_vectorized = vec.transform(X_test)
+            y_test_predicted.append(classifier.predict(X_test_vectorized)[0])
+        '''
+        # Vectorize the test sentence and one hot encoding
+        X_test = vec.transform(X_test_dict)
+        # Predicts the chunks and returns numbers
+        y_test_predicted = classifier.predict(X_test)
+        '''
 
-            # Appends the predicted chunks as a last column and saves the rows
-        #print(y_test_predicted)
-        #print('\n\nlol nope')
-        #exit()
+        # Appends the predicted chunks as a last column and saves the rows
         rows = test_sentence.splitlines()
         rows = [rows[i] + ' ' + y_test_predicted[i] for i in range(len(rows))]
         for row in rows:
             f_out.write(row + '\n')
         f_out.write('\n')
     f_out.close()
-    #exit()
 
 
 if __name__ == '__main__':
     start_time = time.clock()
-    train_corpus = 'train.txt'
-    test_corpus = 'test.txt'
+    train_corpus = 'corpus/conll2000/train.txt'
+    test_corpus = 'corpus/conll2000/test.txt'
     w_size = 2  # The size of the context window to the left and right of the word
     feature_names = ['word_n2', 'word_n1', 'word', 'word_p1', 'word_p2',
                      'pos_n2', 'pos_n1', 'pos', 'pos_p1', 'pos_p2',
                      'chunk_n2', 'chunk_n1']
-
+    #classifierToUse = 1
     train_sentences = conll_reader.read_sentences(train_corpus)
 
     print("Extracting the features...")
-    X_dict, y = extract_features(train_sentences, w_size, feature_names) #, True)
+    X_dict, y = extract_features(train_sentences, w_size, feature_names)
 
     print("Encoding the features...")
     # Vectorize the feature matrix and carry out a one-hot encoding
     vec = DictVectorizer(sparse=True)
     X = vec.fit_transform(X_dict)
     # The statement below will swallow a considerable memory
-    # X = vec.fit_transform(X_dict).toarray()
-    # print(vec.get_feature_names())
+    #X = vec.fit_transform(X_dict).toarray()
+    #print(vec.get_feature_names())
 
     training_start_time = time.clock()
+    #classifiers = []
     print("Training the model...")
     classifier = linear_model.LogisticRegression(penalty='l2', dual=True, solver='liblinear')
     #classifier = tree.DecisionTreeClassifier()
     model = classifier.fit(X, y)
     print(model)
-    #print('\n')
+
 
     test_start_time = time.clock()
     # We apply the model to the test set
@@ -156,7 +147,10 @@ if __name__ == '__main__':
     # Here we carry out a chunk tag prediction and we report the per tag error
     # This is done for the whole corpus without regard for the sentence structure
     print("Predicting the chunks in the test set...")
-    X_test_dict, y_test = extract_features(test_sentences, w_size, feature_names) #, False)
+    X_test_dict, y_test = extract_features(test_sentences, w_size, feature_names)
+
+
+
     # Vectorize the test set and one-hot encoding
     X_test = vec.transform(X_test_dict)  # Possible to add: .toarray()
     y_test_predicted = classifier.predict(X_test)
